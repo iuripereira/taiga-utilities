@@ -82,7 +82,7 @@ def getParams():
     global data
     
     ACTIONS = (["auth", "help", "get_tests", "get_tests_titles", "get_types",
-            "get_status", "get_links", "get_issues_statuses", "get_tags", "add_tag"])
+            "get_status", "get_links", "get_issues_statuses", "get_tags", "add_tag", "get_opened_issues", "get_closed_issues"])
     
     data = {}
     
@@ -197,8 +197,7 @@ def addTag(data):
             total += int(lineSplit[1])
     
     for line in open(data["issues"],'r'):
-        line = line.replace('\n'	, '')
-        
+        line = line.replace('\n', '')
         lineSplit = line.split("\t")
         
         issue_number = lineSplit[0]
@@ -248,7 +247,7 @@ def getTags(data):
     for line in open(data["issues"], 'r'):
         line = line.replace('\n', '')
         
-        issue_data = getIssue(line, data["token"])
+        issue_data = getIssue(data, line)
         to_print = ""
         
         for tag in issue_data["tags"]:
@@ -323,7 +322,7 @@ def getIssuesStatus(data):
         lineSplit = line.split("\t")
         
         issue_id = lineSplit[0]
-        issue_data = getIssue(issue_id, data["token"])
+        issue_data = getIssue(data, issue_id)
         
         print(statuses_dict[issue_data["status"]])
 
@@ -409,6 +408,52 @@ def getTests(data):
     myfile = open(tests_result_folder + data["out"],'w')
     myfile.writelines(report)
 
+def getOpenedIssues(data):
+    url = data["rest_api_url"] + "issues?status__is_closed=false&project=6"
+    req = urllib.request.Request(url)
+    req.add_header('Content-Type', 'application/json')
+    req.add_header('Authorization', 'Bearer ' + data["token"])
+    req.add_header('x-disable-pagination', 'True')
+
+    response = urllib.request.urlopen(req)
+    result = json.loads(response.read().decode('utf-8'))
+
+    myfile = open("issuesAbertos.csv", 'w')
+
+    lines = []
+    lines.append("ID\tTitulo\tCriador\tResponsável\tStatus\tSeveridade\tPrioridade\tTipo\tis_closed\ttags\twatchers\tdata_criacao\tdata_modificacao\tdata_finalizacao\n")
+    for n in result:
+        username = ""
+        if n["assigned_to"]:# and n["assigned_to"] != "None":
+            username = str(n['assigned_to_extra_info']["username"])
+        lines.append('\t'.join([str(n['ref']), str(n['subject']), str(n['owner_extra_info']['username']), username, str(n['status_extra_info']['name']), str(n['severity']), str(n['priority']), str(n['type']), str(n['is_closed']), str(n['tags']), str(n['watchers']), str(n['created_date']), str(n['modified_date']), str(n['finished_date'])]) + "\n")
+    
+    myfile.writelines(lines)
+    myfile.close()
+
+def getClosedIssues(data):
+    url = data["rest_api_url"] + "issues?status__is_closed=true&project=6"
+    req = urllib.request.Request(url)
+    req.add_header('Content-Type', 'application/json')
+    req.add_header('Authorization', 'Bearer ' + data["token"])
+    req.add_header('x-disable-pagination', 'True')
+
+    response = urllib.request.urlopen(req)
+    result = json.loads(response.read().decode('utf-8'))
+
+    myfile = open("issuesFechados.csv", 'w')
+
+    lines = []
+    lines.append("ID\tTitulo\tCriador\tResponsável\tStatus\tSeveridade\tPrioridade\tTipo\tis_closed\ttags\twatchers\tdata_criacao\tdata_modificacao\tdata_finalizacao\n")
+    for n in result:
+        username = ""
+        if n["assigned_to"]:# and n["assigned_to"] != "None":
+            username = str(n['assigned_to_extra_info']["username"])
+        lines.append('\t'.join([str(n['ref']), str(n['subject']), str(n['owner_extra_info']['username']), username, str(n['status_extra_info']['name']), str(n['severity']), str(n['priority']), str(n['type']), str(n['is_closed']), str(n['tags']), str(n['watchers']), str(n['created_date']), str(n['modified_date']), str(n['finished_date'])]) + "\n")
+    
+    myfile.writelines(lines)
+    myfile.close()
+
 '''
  Usage
 '''
@@ -465,7 +510,10 @@ def main():
             "get_links" : getLinks,
             "get_tags": getTags,
             "add_tag" : addTag,
-            "get_tests_titles": getTestsTitles
+            "get_tests_titles": getTestsTitles,
+            "get_closed_issues": getClosedIssues,
+            "get_opened_issues": getOpenedIssues
+
         }
         
         functions[data["action"]](data)
@@ -479,3 +527,5 @@ if __name__ == '__main__':
         sys.exit(0)
     else:
         sys.exit(1)
+
+
