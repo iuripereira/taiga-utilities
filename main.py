@@ -81,8 +81,8 @@ def getParams():
     global conf
     global data
     
-    ACTIONS = (["auth", "help", "get_tests", "get_tests_titles", "get_types",
-            "get_status", "get_links", "get_issues_statuses", "get_tags", "add_tag", "get_opened_issues", "get_closed_issues"])
+    ACTIONS = (["auth", "help", "get_tests", "get_issues_titles", "get_types",
+            "get_status", "get_links", "get_issues_statuses", "get_tags", "add_tag", "set_issues_status"])
     
     data = {}
     
@@ -314,7 +314,7 @@ def getIssuesStatus(data):
     types = set()
     result = ""
 
-    for line in open(data["issues"],'r'):
+    for line in open(data["issues"], 'r'):
         line = line.replace('\n'	, '')
         
         i = i + 1
@@ -327,6 +327,46 @@ def getIssuesStatus(data):
         print(statuses_dict[issue_data["status"]])
 
 '''
+ Set issues status
+'''
+def setIssuesStatus(data):
+
+    statuses = requesIssuesStatuses(data)
+    ids = []
+    for status in statuses:
+        print(status["name"], "=", status["id"])
+        ids.append(status["id"])
+
+    status_id = int(input("Type the required status to change the issues: "))
+    
+    if not status_id in ids:
+        print("Invalid status")
+        return
+
+    status_old = int(input("Type the old status from issue required to change it to new status (0 to ignore): "))
+    if status_old != 0 and not status_old in ids:
+        print("Invalid status")
+        return
+
+    issues = []
+    for line in open(data["issues"], 'r'):
+        issues.append(line.replace("\n", ""))
+
+    for i in issues:
+        issue = getIssue(data, i)
+        
+        if issue["status"] == status_old:
+            url = data["rest_api_url"] + ISSUES_PATH + "" + str(issue["id"]) + "?project=6"
+            
+            json_data = {'status': status_id, 'version': issue["version"]}
+            headers = {'Content-type': 'application/json','Authorization': 'Bearer ' + data["token"]}
+            r = requests.patch(url, json=json_data, headers=headers)
+            
+            if (r.status_code != 200):
+                print("       Text: ", r.text)
+                return False
+
+'''
  Get available statuses from taiga issues
 '''
 def getIssuesStatuses(data):
@@ -337,25 +377,24 @@ def getIssuesStatuses(data):
 
 
 '''
- Get tests titles from a issues list
+ Get issues titles from a issues list
 '''
-def getTestsTitles(data):
+def getIssuesTitles(data):
     report = []
-    
     total = sum(1 for line in open(data["issues"]))
     i = 1
 
     for line in open(data["issues"], 'r'):
         line = line.replace('\n', '')
-        
+
         req = urllib.request.Request(data["rest_api_url"] + ISSUES_PATH + 'by_ref?ref=' + line + "&project=6")
         req.add_header('Content-Type', 'application/json')
         req.add_header('Authorization', 'Bearer ' + data["token"])
-        
+
         response = urllib.request.urlopen(req)
-        
+
         _data = json.loads(response.read().decode('utf-8'))
-        
+
         print(_data['subject'])
 
 '''
@@ -421,7 +460,7 @@ def getOpenedIssues(data):
     myfile = open("issuesAbertos.csv", 'w')
 
     lines = []
-    lines.append("ID\tTitulo\tCriador\tResponsável\tStatus\tSeveridade\tPrioridade\tTipo\tis_closed\ttags\twatchers\tdata_criacao\tdata_modificacao\tdata_finalizacao\n")
+    lines.append("ID\tTitle\tCreated by\tAssigned to\tStatus\tSeverity\tPriority\tType\tIs closed\tTags\tWatchers\tCreated at\tModified at\tFinished at\n")
     for n in result:
         username = ""
         if n["assigned_to"]:# and n["assigned_to"] != "None":
@@ -441,10 +480,10 @@ def getClosedIssues(data):
     response = urllib.request.urlopen(req)
     result = json.loads(response.read().decode('utf-8'))
 
-    myfile = open("issuesFechados.csv", 'w')
+    myfile = open(data["issues"], 'w')
 
     lines = []
-    lines.append("ID\tTitulo\tCriador\tResponsável\tStatus\tSeveridade\tPrioridade\tTipo\tis_closed\ttags\twatchers\tdata_criacao\tdata_modificacao\tdata_finalizacao\n")
+    lines.append("ID\tTitle\tCreated by\tAssigned to\tStatus\tSeverity\tPriority\tType\tIs closed\tTags\tWatchers\tCreated at\tModified at\tFinished at\n")
     for n in result:
         username = ""
         if n["assigned_to"]:# and n["assigned_to"] != "None":
@@ -472,7 +511,7 @@ def usage(data=None):
     print("        -tests_result [FOLDER]: Folder to copy the tests")
     print("        -out [FILE]: File to save the results")
     
-    print("    get_tests_titles: ")
+    print("    get_issues_titles: ")
     print("        -issues [FILE]: File with issues ids list")
     
     print("    get_types: ")
@@ -482,6 +521,9 @@ def usage(data=None):
     print("        -issues [FILE]: File with issues ids list")
     
     print("    get_issues_statuses:\n")
+    
+    print("    set_issues_status: Set status to issues from a list\n")
+    print("        -issues [FILE]: File with issues ids list")
     
     print("    get_links: ")
     print("        -issues [FILE]: File with issues ids list")
@@ -510,7 +552,8 @@ def main():
             "get_links" : getLinks,
             "get_tags": getTags,
             "add_tag" : addTag,
-            "get_tests_titles": getTestsTitles,
+            "get_issues_titles": getIssuesTitles,
+            "set_issues_status": setIssuesStatus,
             "get_closed_issues": getClosedIssues,
             "get_opened_issues": getOpenedIssues
 
@@ -527,5 +570,3 @@ if __name__ == '__main__':
         sys.exit(0)
     else:
         sys.exit(1)
-
-
