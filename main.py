@@ -295,7 +295,8 @@ def requesIssuesStatuses(data):
     req = urllib.request.Request(url)
     req.add_header('Content-Type', 'application/json')
     req.add_header('Authorization', 'Bearer ' + data["token"])
-    
+
+
     response = urllib.request.urlopen(req)
     return json.loads(response.read().decode('utf-8'))
 
@@ -454,9 +455,6 @@ def getClosedIssues(data):
     myfile.writelines(lines)
     myfile.close()
 
-'''
- Usage
-'''
 def usage(data=None):
     print("Usage: ")
     print("python3 main.py [action] [args]")
