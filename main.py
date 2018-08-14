@@ -419,7 +419,7 @@ def getOpenedIssues(data):
     response = urllib.request.urlopen(req)
     result = json.loads(response.read().decode('utf-8'))
 
-    myfile = open("issuesAbertos.csv", 'w')
+    myfile = open(data["out"], 'w')
 
     lines = []
     lines.append("ID\tTitulo\tCriador\tResponsável\tStatus\tSeveridade\tPrioridade\tTipo\tis_closed\ttags\twatchers\tdata_criacao\tdata_modificacao\tdata_finalizacao\n")
@@ -442,7 +442,7 @@ def getClosedIssues(data):
     response = urllib.request.urlopen(req)
     result = json.loads(response.read().decode('utf-8'))
 
-    myfile = open("issuesFechados.csv", 'w')
+    myfile = open(data["out"], 'w')
 
     lines = []
     lines.append("ID\tTitulo\tCriador\tResponsável\tStatus\tSeveridade\tPrioridade\tTipo\tis_closed\ttags\twatchers\tdata_criacao\tdata_modificacao\tdata_finalizacao\n")
@@ -494,6 +494,13 @@ def usage(data=None):
     print("        -groups [FILE]: File with issues groups")
     print("        -tag [STRING]: Tag to be added")
 
+    print("    get_closed_issues: ")
+    print("        -out [FILE]: File to save the results")
+
+    print("    get_opened_issues: ")
+    print("        -out [FILE]: File to save the results")
+
+
 def main():
     data = getParams()
     
@@ -511,7 +518,6 @@ def main():
             "get_tests_titles": getTestsTitles,
             "get_closed_issues": getClosedIssues,
             "get_opened_issues": getOpenedIssues
-
         }
         
         functions[data["action"]](data)
