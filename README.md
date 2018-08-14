@@ -33,4 +33,8 @@ Actions:
         -issues [FILE]: File with issues ids list
         -groups [FILE]: File with issues groups
         -tag [STRING]: Tag to be added
+    get_closed_issues:
+        -issues [FILE]: File with issues ids list
+    get_opened_issues:
+        -issues [FILE]: File with issues ids list
 
